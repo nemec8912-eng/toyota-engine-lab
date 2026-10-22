@@ -1,0 +1,10 @@
+{
+  "name": "TOYOTA ENGINE LAB — Corolla E150 (1ZR-FE)",
+  "short_name": "1ZR Engine Lab",
+  "description": "Интерактивный 3D диагностический стенд Toyota Corolla E150 (1ZR-FE 1.6L Dual VVT-i)",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17"
+}
