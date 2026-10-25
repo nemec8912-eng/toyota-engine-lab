@@ -84,7 +84,7 @@
 <span id="cluster-check" style="padding:6px;border-radius:5px;background:#372c19;color:#c4b28d">CHECK ENGINE</span>
 <span id="cluster-oil" style="padding:6px;border-radius:5px;background:#372c19;color:#c4b28d">МАСЛО</span>
 <span id="cluster-battery" style="padding:6px;border-radius:5px;background:#372c19;color:#c4b28d">АКБ</span></div>
-<div style="color:#9fb4c6;font-size:10px;margin-top:7px">Учебная симуляция, не заводская приборная панель. Показания связаны с моделью состояния двигателя.</div></section>
+<div id="cluster-motion" style="font-size:12px;color:#78d4ff;margin-top:7px;font-weight:bold">● Двигатель неподвижен</div><div style="color:#9fb4c6;font-size:10px;margin-top:7px">Учебная симуляция, не заводская приборная панель. Показания связаны с моделью состояния двигателя.</div></section>
   <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ: СЛЕВА ПРИБОРЫ, В ЦЕНТРЕ 3D-ДВИГАТЕЛЬ И СХЕМЫ, СПРАВА КАРТОЧКИ И ПАРАМЕТРЫ -->
   <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 overflow-hidden">
 
@@ -4088,10 +4088,10 @@ window.Engine3DScene = {
     const angularVel = (state.rpm / 60) * Math.PI * 2 * state.slowMotionFactor;
     // Небольшая визуальная вибрация при работе, усиливающаяся при неустойчивом ХХ.
     const running = state.rpm > 350;
-    const rough = state.engineState === "АВАРИЙНАЯ ОСТАНОВКА" ? 0.018 : 0.005;
+    const rough = state.engineState === "АВАРИЙНАЯ ОСТАНОВКА" ? 0.034 : 0.019;
     if (this.rootGroup) {
-      this.rootGroup.position.y = running ? Math.sin(this.crankAngleRad * 2) * rough : 0;
-      this.rootGroup.rotation.z = running ? Math.sin(this.crankAngleRad) * rough * 0.35 : 0;
+      this.rootGroup.position.y = running ? Math.sin(performance.now() * 0.065) * rough : 0;
+      this.rootGroup.rotation.z = running ? Math.sin(performance.now() * 0.048) * rough * 0.5 : 0;
     }
     this.crankAngleRad = (this.crankAngleRad + angularVel * dt) % (Math.PI * 4);
 
@@ -5836,6 +5836,7 @@ el("cluster-voltage").textContent=(Number(s.systemVoltage)||0).toFixed(1);
 el("cluster-fuel").textContent=(Number(s.fuelPressureBar)||0).toFixed(1);
 el("cluster-rpm-bar").style.width=Math.min(100,rpm/6500*100)+"%";
 el("cluster-status").textContent=s.engineState|| (run?"Работает":key?"Зажигание":"Выключен");
+const motion=el("cluster-motion");if(motion){motion.textContent=run?"● ВРАЩЕНИЕ ДВИГАТЕЛЯ · "+Math.round(rpm)+" об/мин":rpm>30?"● ПРОКРУТКА СТАРТЕРОМ":"● Двигатель неподвижен";motion.style.color=run?"#4ade80":rpm>30?"#facc15":"#78d4ff";}
 const setLamp=(id,on,color)=>{const e=el(id);e.style.color=on?"#fff":"#c4b28d";e.style.background=on?color:"#372c19";};
 setLamp("cluster-oil",key&&!run,"#b52c31");
 setLamp("cluster-battery",key&&(!run||Number(s.systemVoltage)<12.2),"#b52c31");
