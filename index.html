@@ -70,15 +70,34 @@
 
   <div role="note" style="padding:8px 12px;background:#102334;border-bottom:1px solid #245070;font-size:12px;color:#b8dcf6">🔧 Corolla E150 · 2010 · 1ZR-FE · 1.6 · МКПП. Режимы: 3D-разборка, электрооборудование, мультиметр, контрольная лампа, OBD-II. <strong>Это учебная симуляция:</strong> размеры, моменты затяжки, номера контактов и номиналы проверяйте по заводскому руководству и VIN до реального ремонта.</div>
 
-  <section id="live-cluster" style="background:linear-gradient(#1d1d1f,#090909);border-bottom:2px solid #744521;padding:9px 12px;color:#ffbc81;font:13px -apple-system,BlinkMacSystemFont,Arial,sans-serif">
-<div style="display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap"><strong>TOYOTA COROLLA E150 · ПРИБОРЫ</strong><span id="cluster-status" aria-live="polite">ВЫКЛЮЧЕНО</span></div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;max-width:590px;margin:auto"><div style="min-width:0;text-align:center"><svg viewBox="0 0 220 188" style="width:100%;max-width:260px;overflow:visible" aria-label="x1000 r/min"><defs><radialGradient id="cluster-tach-bg"><stop stop-color="#20242b"/><stop offset="1" stop-color="#030405"/></radialGradient></defs><circle cx="110" cy="92" r="85" fill="url(#cluster-tach-bg)" stroke="#52565b" stroke-width="6"/><circle cx="110" cy="92" r="77" fill="none" stroke="#bd7031" stroke-width="1" opacity=".55"/><g id="cluster-tach-ticks"></g><text x="110" y="126" text-anchor="middle" fill="#d8b28a" font-size="12">x1000 r/min</text><text x="110" y="142" text-anchor="middle" fill="#a18c7c" font-size="9">об/мин × 1000</text><g id="cluster-tach-needle" transform="rotate(-120 110 92)" style="transition:transform .22s ease-out"><path d="M107 104 L110 30 L113 104 Z" fill="#ff8b36"/><circle cx="110" cy="92" r="7" fill="#d0c6b6" stroke="#292929" stroke-width="3"/></g><text id="cluster-tach-value" x="110" y="165" text-anchor="middle" fill="#ffb36c" font-size="13">0</text></svg></div><div style="min-width:0;text-align:center"><svg viewBox="0 0 220 188" style="width:100%;max-width:260px;overflow:visible" aria-label="km/h"><defs><radialGradient id="cluster-speed-bg"><stop stop-color="#20242b"/><stop offset="1" stop-color="#030405"/></radialGradient></defs><circle cx="110" cy="92" r="85" fill="url(#cluster-speed-bg)" stroke="#52565b" stroke-width="6"/><circle cx="110" cy="92" r="77" fill="none" stroke="#bd7031" stroke-width="1" opacity=".55"/><g id="cluster-speed-ticks"></g><text x="110" y="126" text-anchor="middle" fill="#d8b28a" font-size="12">km/h</text><text x="110" y="142" text-anchor="middle" fill="#a18c7c" font-size="9">км/ч</text><g id="cluster-speed-needle" transform="rotate(-120 110 92)" style="transition:transform .22s ease-out"><path d="M107 104 L110 30 L113 104 Z" fill="#ff8b36"/><circle cx="110" cy="92" r="7" fill="#d0c6b6" stroke="#292929" stroke-width="3"/></g><text id="cluster-speed-value" x="110" y="165" text-anchor="middle" fill="#ffb36c" font-size="13">0</text></svg></div></div>
-<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;text-align:center;font-size:11px;margin:4px 0"><div>ОЖ<br><b id="cluster-temp">24</b> °C</div><div>АКБ<br><b id="cluster-voltage">12.6</b> В</div><div>ТОПЛ. ДАВЛ.<br><b id="cluster-fuel">0.0</b> бар</div><div>ОБОРОТЫ<br><b id="cluster-rpm">0</b></div></div>
-<div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:center">
-<button id="cluster-ignition" type="button" style="background:#39312a;border:1px solid #bd8249;border-radius:7px;padding:9px;color:#ffe1b8">🔑 Зажигание</button><button id="cluster-start" type="button" style="background:#365235;border:1px solid #76b16b;border-radius:7px;padding:9px;color:white">▶ Запуск</button><button id="cluster-stop" type="button" style="background:#673330;border:1px solid #be6c6c;border-radius:7px;padding:9px;color:white">■ Стоп</button>
-<span id="cluster-check" style="padding:6px;background:#372c19;color:#c4b28d">CHECK ENGINE</span><span id="cluster-oil" style="padding:6px;background:#372c19;color:#c4b28d">МАСЛО</span><span id="cluster-battery" style="padding:6px;background:#372c19;color:#c4b28d">АКБ</span></div>
-<div id="cluster-motion" style="text-align:center;font-size:11px;color:#78d4ff;margin-top:5px">● Двигатель неподвижен</div>
-<div style="text-align:center;color:#8c8985;font-size:10px">Стилизованная приборка с оранжевой подсветкой. Скорость на неподвижном стенде — 0 км/ч.</div></section>
+  <section id="live-cluster" style="background:linear-gradient(#101013,#020203);border:2px solid #3b3d42;border-radius:20px;margin:5px;padding:9px;color:#ffa654;font:12px -apple-system,BlinkMacSystemFont,Arial,sans-serif;box-shadow:inset 0 3px 16px #000">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:5px"><strong>TOYOTA COROLLA E150 · OPTITRON</strong><span id="cluster-status">ВЫКЛЮЧЕНО</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;max-width:760px;margin:auto;align-items:center"><svg viewBox="0 0 260 238" style="width:100%;min-width:0;filter:drop-shadow(0 0 3px #a44817)" aria-label="x1000 r/min"><defs><radialGradient id="cluster-tach-bg"><stop stop-color="#1c1009"/><stop offset=".67" stop-color="#090706"/><stop offset="1" stop-color="#292423"/></radialGradient><filter id="cluster-tach-glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<path d="M16 127 A114 114 0 1 1 243 127 L232 203 Q130 222 28 203 Z" fill="#0b0b0c" stroke="#8d939a" stroke-width="2"/>
+<circle cx="130" cy="113" r="105" fill="url(#cluster-tach-bg)" stroke="#303134" stroke-width="8"/>
+<circle cx="130" cy="113" r="97" fill="none" stroke="#ff872e" stroke-width="2.5" filter="url(#cluster-tach-glow)"/>
+<circle cx="130" cy="113" r="91" fill="none" stroke="#7d2d0b" stroke-width="2"/>
+<g id="cluster-tach-ticks"></g>
+<circle cx="130" cy="125" r="58" fill="#100b08" stroke="#a64c18" stroke-width="3"/>
+<circle cx="130" cy="125" r="54" fill="#271205" stroke="#ff7d21" stroke-width="1" opacity=".8"/>
+<g fill="#ff9b43" font-size="12" text-anchor="middle"><text x="130" y="91">H</text><text x="130" y="160">C</text><text x="88" y="119">F</text><text x="173" y="119">E</text></g><line x1="130" y1="100" x2="130" y2="151" stroke="#ff8b28" stroke-width="4" filter="url(#cluster-tach-glow)"/><text x="130" y="137" text-anchor="middle" fill="#ff9c43" font-size="11">TEMP  ·  FUEL</text>
+<g id="cluster-tach-needle" transform="rotate(-120 130 113)" style="transition:transform .18s ease-out"><path d="M127 126 L130 23 L133 126 Z" fill="#ff6d38" filter="url(#cluster-tach-glow)"/><circle cx="130" cy="113" r="5" fill="#f6c9a1"/></g>
+<text x="37" y="199" font-size="10" fill="#ffad5c">x1000 r/min</text><text id="cluster-tach-value" x="130" y="226" text-anchor="middle" font-size="11" fill="#ff9c43">0</text></svg><svg viewBox="0 0 260 238" style="width:100%;min-width:0;filter:drop-shadow(0 0 3px #a44817)" aria-label="km/h"><defs><radialGradient id="cluster-speed-bg"><stop stop-color="#1c1009"/><stop offset=".67" stop-color="#090706"/><stop offset="1" stop-color="#292423"/></radialGradient><filter id="cluster-speed-glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<path d="M16 127 A114 114 0 1 1 243 127 L232 203 Q130 222 28 203 Z" fill="#0b0b0c" stroke="#8d939a" stroke-width="2"/>
+<circle cx="130" cy="113" r="105" fill="url(#cluster-speed-bg)" stroke="#303134" stroke-width="8"/>
+<circle cx="130" cy="113" r="97" fill="none" stroke="#ff872e" stroke-width="2.5" filter="url(#cluster-speed-glow)"/>
+<circle cx="130" cy="113" r="91" fill="none" stroke="#7d2d0b" stroke-width="2"/>
+<g id="cluster-speed-ticks"></g>
+<circle cx="130" cy="125" r="58" fill="#100b08" stroke="#a64c18" stroke-width="3"/>
+<circle cx="130" cy="125" r="54" fill="#271205" stroke="#ff7d21" stroke-width="1" opacity=".8"/>
+<text id="cluster-center-message" x="130" y="112" text-anchor="middle" fill="#ffad55" font-size="11" font-weight="bold">ЗАЖИГАНИЕ</text><text x="130" y="132" text-anchor="middle" fill="#ffad55" font-size="9">ODO</text><text id="cluster-odo" x="130" y="147" text-anchor="middle" fill="#ffad55" font-size="12">81501 км</text>
+<g id="cluster-speed-needle" transform="rotate(-120 130 113)" style="transition:transform .18s ease-out"><path d="M127 126 L130 23 L133 126 Z" fill="#ff6d38" filter="url(#cluster-speed-glow)"/><circle cx="130" cy="113" r="5" fill="#f6c9a1"/></g>
+<text x="37" y="199" font-size="10" fill="#ffad5c">km/h</text><text id="cluster-speed-value" x="130" y="226" text-anchor="middle" font-size="11" fill="#ff9c43">0</text></svg></div>
+<div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:-3px 0 8px"><span id="cluster-check" style="padding:5px;color:#6c4a27">CHECK ENGINE</span><span id="cluster-oil" style="padding:5px;color:#6c4a27">● МАСЛО</span><span id="cluster-battery" style="padding:5px;color:#6c4a27">▣ АКБ</span></div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center;font-size:10px;color:#f7ac65"><div>ОЖ <b id="cluster-temp">24</b> °C</div><div>АКБ <b id="cluster-voltage">12.6</b> В</div><div>ТОПЛ. <b id="cluster-fuel">0.0</b> бар</div><div>RPM <b id="cluster-rpm">0</b></div></div>
+<div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:9px"><button id="cluster-ignition" style="background:#37251c;color:#ffd4a3;border:1px solid #9b5b2b;border-radius:6px;padding:9px">🔑 Зажигание</button><button id="cluster-start" style="background:#275036;color:white;border:1px solid #519965;border-radius:6px;padding:9px">▶ Запуск</button><button id="cluster-stop" style="background:#632d2d;color:white;border:1px solid #a34a4a;border-radius:6px;padding:9px">■ Стоп</button></div>
+<div id="cluster-motion" style="text-align:center;font-size:11px;color:#78d4ff;margin-top:6px">● Двигатель неподвижен</div>
+<div style="text-align:center;color:#888;font-size:9px;margin-top:5px">Визуальная реконструкция по фотографии; показания — учебная симуляция.</div></section>
   <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ: СЛЕВА ПРИБОРЫ, В ЦЕНТРЕ 3D-ДВИГАТЕЛЬ И СХЕМЫ, СПРАВА КАРТОЧКИ И ПАРАМЕТРЫ -->
   <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 overflow-hidden">
 
@@ -5825,18 +5844,19 @@ function initAnalog(){
 for(const [id,max,step] of [["cluster-tach",8,1],["cluster-speed",240,20]]){
 const g=el(id+"-ticks");if(!g)continue;
 for(let n=0;n<=max;n+=step){
-const rad=(-120+240*n/max)*Math.PI/180;
-const x1=110+67*Math.sin(rad),y1=92-67*Math.cos(rad),x2=110+76*Math.sin(rad),y2=92-76*Math.cos(rad);
-const line=document.createElementNS("http://www.w3.org/2000/svg","line");for(const [k,v] of Object.entries({x1,y1,x2,y2,stroke:"#f3c49d","stroke-width":"2"}))line.setAttribute(k,v);g.appendChild(line);
-const tx=document.createElementNS("http://www.w3.org/2000/svg","text");tx.setAttribute("x",110+54*Math.sin(rad));tx.setAttribute("y",96-54*Math.cos(rad));tx.setAttribute("text-anchor","middle");tx.setAttribute("font-size","11");tx.setAttribute("fill","#ffd5ac");tx.textContent=n;g.appendChild(tx);
+const angle=(-120+240*n/max)*Math.PI/180;
+const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+for(const [k,v] of Object.entries({x1:130+85*Math.sin(angle),y1:113-85*Math.cos(angle),x2:130+94*Math.sin(angle),y2:113-94*Math.cos(angle),stroke:"#ffb16b","stroke-width":2}))line.setAttribute(k,v);g.appendChild(line);
+const t=document.createElementNS("http://www.w3.org/2000/svg","text");t.setAttribute("x",130+73*Math.sin(angle));t.setAttribute("y",117-73*Math.cos(angle));t.setAttribute("text-anchor","middle");t.setAttribute("font-size","12");t.setAttribute("fill","#ffb46f");t.textContent=n;g.appendChild(t);
 }
 }
 }
-function setNeedle(id,val,max){const angle=-120+240*Math.max(0,Math.min(max,val))/max;const needle=el(id+"-needle");if(needle)needle.setAttribute("transform","rotate("+angle+" 110 92)");const value=el(id+"-value");if(value)value.textContent=id==="cluster-tach"?Math.round(val)+" об/мин":Math.round(val)+" км/ч";}
+function setNeedle(id,val,max){const angle=-120+240*Math.max(0,Math.min(max,val))/max;const needle=el(id+"-needle");if(needle)needle.setAttribute("transform","rotate("+angle+" 130 113)");const value=el(id+"-value");if(value)value.textContent=id==="cluster-tach"?Math.round(val)+" об/мин":Math.round(val)+" км/ч";}
 function draw(){
 const s=window.simState;if(!s)return;
 const rpm=Number(s.rpm)||0, key=s.ignitionKey!=="OFF",run=rpm>450;
 setNeedle("cluster-tach",rpm/1000,8);setNeedle("cluster-speed",0,240);
+const msg=el("cluster-center-message");if(msg)msg.textContent=key?(run?"ДВИГАТЕЛЬ РАБОТАЕТ":rpm>30?"ЗАПУСК":"ЗАЖИГАНИЕ"):"ВЫКЛЮЧЕНО";
 el("cluster-rpm").textContent=Math.round(rpm).toLocaleString("ru-RU");
 el("cluster-temp").textContent=Math.round(Number(s.coolantTempC)||0);
 el("cluster-voltage").textContent=(Number(s.systemVoltage)||0).toFixed(1);
