@@ -3644,7 +3644,7 @@ window.Engine3DScene = {
     const h = container.clientHeight || 520;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0f141c);
+    this.scene.background = new THREE.Color(0x080f1c);
 
     this.camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -3653,12 +3653,12 @@ window.Engine3DScene = {
     container.appendChild(this.renderer.domElement);
 
     // Освещение моторного стенда
-    const amb = new THREE.AmbientLight(0xdbeafe, 0.65);
+    const amb = new THREE.AmbientLight(0xdbeafe, 0.88);
     this.scene.add(amb);
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.95);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.35);
     keyLight.position.set(4, 7, 5);
     this.scene.add(keyLight);
-    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.45);
+    const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.72);
     fillLight.position.set(-5, -2, -4);
     this.scene.add(fillLight);
 
@@ -3669,6 +3669,10 @@ window.Engine3DScene = {
 
     this.rootGroup = new THREE.Group();
     this.scene.add(this.rootGroup);
+    // Студийный свет, не влияющий на диагностические расчёты.
+    const rim = new THREE.DirectionalLight(0x83c9ff, 1.1);
+    rim.position.set(-3, 4, -5);
+    this.scene.add(rim);
 
     this.build1ZREngineGeometry();
     this.setupOrbitAndRaycast(container);
@@ -4082,6 +4086,13 @@ window.Engine3DScene = {
 
     // Вращение КШМ и ГРМ с учётом slowMotionFactor
     const angularVel = (state.rpm / 60) * Math.PI * 2 * state.slowMotionFactor;
+    // Небольшая визуальная вибрация при работе, усиливающаяся при неустойчивом ХХ.
+    const running = state.rpm > 350;
+    const rough = state.engineState === "АВАРИЙНАЯ ОСТАНОВКА" ? 0.018 : 0.005;
+    if (this.rootGroup) {
+      this.rootGroup.position.y = running ? Math.sin(this.crankAngleRad * 2) * rough : 0;
+      this.rootGroup.rotation.z = running ? Math.sin(this.crankAngleRad) * rough * 0.35 : 0;
+    }
     this.crankAngleRad = (this.crankAngleRad + angularVel * dt) % (Math.PI * 4);
 
     if (this.animParts.crankshaft) {
@@ -5828,11 +5839,12 @@ el("cluster-status").textContent=s.engineState|| (run?"Работает":key?"З
 const setLamp=(id,on,color)=>{const e=el(id);e.style.color=on?"#fff":"#c4b28d";e.style.background=on?color:"#372c19";};
 setLamp("cluster-oil",key&&!run,"#b52c31");
 setLamp("cluster-battery",key&&(!run||Number(s.systemVoltage)<12.2),"#b52c31");
-setLamp("cluster-check",key&&(!run||(Array.isArray(s.activeDtcs)&&s.activeDtcs.length>0)),"#a86a12");
+const faults = Array.isArray(s.activeDtcs) ? s.activeDtcs.length : (Array.isArray(s.dtcList) ? s.dtcList.length : 0);
+setLamp("cluster-check",key&&(!run||faults>0||Boolean(s.limpHomeMode)),"#a86a12");
 }
 window.addEventListener("load",()=>{
 el("cluster-ignition").addEventListener("click",()=>{if(window.simState)window.simState.ignitionKey=window.simState.ignitionKey==="OFF"?"IG_ON":"OFF";});
-el("cluster-start").addEventListener("click",()=>{if(!window.simState)return;window.simState.ignitionKey="START";setTimeout(()=>{if(window.simState&&window.simState.ignitionKey==="START")window.simState.ignitionKey="IG_ON";},850);});
+el("cluster-start").addEventListener("click",()=>{if(!window.simState)return;window.simState.ignitionKey="START";setTimeout(()=>{if(window.simState&&window.simState.ignitionKey==="START")window.simState.ignitionKey="IG_ON";},1500);});
 el("cluster-stop").addEventListener("click",()=>{if(window.simState)window.simState.ignitionKey="OFF";});
 setInterval(draw,200);draw();
 });
