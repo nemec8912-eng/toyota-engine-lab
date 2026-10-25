@@ -36,7 +36,7 @@
       <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center font-black text-white text-sm shadow">1ZR</div>
       <div>
         <h1 class="text-xs md:text-sm font-extrabold tracking-wide text-white">TOYOTA ENGINE LAB — COROLLA E150 (2010, 1ZR-FE 1.6L DUAL VVT-i, 124 Л.С.)</h1>
-        <p class="text-[10px] text-slate-400">Интерактивный 3D диагностический стенд по заводской документации RM04F1RU / EWD (разъёмы ЭБУ A50 / B31)</p>
+        <p class="text-[10px] text-slate-400">Интерактивный учебный стенд 1ZR-FE · заводские параметры и распиновки требуют сверки по VIN и EWD</p>
       </div>
     </div>
 
@@ -68,6 +68,8 @@
     </button>
   </div>
 
+  <div role="note" style="padding:8px 12px;background:#102334;border-bottom:1px solid #245070;font-size:12px;color:#b8dcf6">🔧 Corolla E150 · 2010 · 1ZR-FE · 1.6 · МКПП. Режимы: 3D-разборка, электрооборудование, мультиметр, контрольная лампа, OBD-II. <strong>Это учебная симуляция:</strong> размеры, моменты затяжки, номера контактов и номиналы проверяйте по заводскому руководству и VIN до реального ремонта.</div>
+
   <!-- ОСНОВНАЯ РАБОЧАЯ ОБЛАСТЬ: СЛЕВА ПРИБОРЫ, В ЦЕНТРЕ 3D-ДВИГАТЕЛЬ И СХЕМЫ, СПРАВА КАРТОЧКИ И ПАРАМЕТРЫ -->
   <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 p-2 overflow-hidden">
 
@@ -75,11 +77,10 @@
     <section id="section-left-instruments" class="lg:col-span-3 flex flex-col gap-2 lg:overflow-y-auto lg:max-h-[calc(100vh-145px)] pr-0.5">
       <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2">
         <div class="text-[10px] font-bold text-slate-400 uppercase mb-1.5">Выбор диагностического прибора (Единая модель):</div>
-        <div class="grid grid-cols-5 gap-1 text-[11px]">
+        <div class="grid grid-cols-4 gap-1 text-[11px]">
           <button type="button" data-action="select-tool" data-tool="multimeter" class="py-1.5 px-1 rounded border border-slate-700 bg-sky-600 text-white font-semibold text-center">Мультим.</button>
           <button type="button" data-action="select-tool" data-tool="testlight" class="py-1.5 px-1 rounded border border-slate-700 bg-slate-900 text-slate-300 font-semibold text-center">Контр.</button>
           <button type="button" data-action="select-tool" data-tool="continuity" class="py-1.5 px-1 rounded border border-slate-700 bg-slate-900 text-slate-300 font-semibold text-center">Прозв.</button>
-          <button type="button" data-action="select-tool" data-tool="oscilloscope" class="py-1.5 px-1 rounded border border-slate-700 bg-slate-900 text-slate-300 font-semibold text-center">Осцилл.</button>
           <button type="button" data-action="select-tool" data-tool="obd2" class="py-1.5 px-1 rounded border border-slate-700 bg-slate-900 text-slate-300 font-semibold text-center">OBD-II</button>
         </div>
       </div>
