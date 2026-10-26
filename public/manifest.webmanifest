@@ -1,0 +1,16 @@
+{
+  "name": "Toyota Engine Lab — 1ZR-FE",
+  "short_name": "1ZR Lab",
+  "description": "Виртуальный 3D-стенд и помощник по ремонту двигателя 1ZR-FE (Corolla E150)",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0f15",
+  "theme_color": "#0b0f15",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
