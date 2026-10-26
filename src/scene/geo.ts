@@ -5,23 +5,67 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 export type V3 = [number, number, number];
 export const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
+// ---------- Процедурные фактуры ----------
+function noiseCanvas(size: number, base: number, amp: number, blobs = 0, seed = 1): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(size, size);
+  let x = seed * 9301 + 49297;
+  const rnd = () => { x = (x * 9301 + 49297) % 233280; return x / 233280; };
+  for (let i = 0; i < size * size; i++) {
+    const n = base + (rnd() - 0.5) * amp;
+    img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = Math.max(0, Math.min(255, n));
+    img.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  // крупные пятна (литьё, неровность окраски)
+  for (let k = 0; k < blobs; k++) {
+    const r = 4 + rnd() * size * 0.12;
+    const gr = g.createRadialGradient(rnd() * size, rnd() * size, 0, rnd() * size, rnd() * size, r);
+    const v = rnd() > 0.5 ? 255 : 0;
+    gr.addColorStop(0, `rgba(${v},${v},${v},0.10)`);
+    gr.addColorStop(1, 'rgba(128,128,128,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, size, size);
+  }
+  return c;
+}
+function tex(c: HTMLCanvasElement, repeat = 4, srgb = false): THREE.CanvasTexture {
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repeat, repeat);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+const hasDom = typeof document !== 'undefined';
+/** Шершавое литьё: мелкий шум + пятна. */
+const castBump = hasDom ? tex(noiseCanvas(256, 128, 120, 60, 3), 6) : null;
+/** Порошковая/кракле-краска. */
+const crinkleBump = hasDom ? tex(noiseCanvas(256, 128, 200, 0, 7), 10) : null;
+/** Мелкая фактура пластика/резины. */
+const fineBump = hasDom ? tex(noiseCanvas(128, 128, 70, 0, 11), 14) : null;
+const roughVar = hasDom ? tex(noiseCanvas(256, 150, 60, 40, 5), 3) : null;
+
 // ---------- Материалы ----------
 function std(color: number, metal = 0.1, rough = 0.6, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) {
   return new THREE.MeshStandardMaterial({ color, metalness: metal, roughness: rough, ...extra });
 }
+const cast = (color: number, metal: number, rough: number, bump = 0.0012) => std(color, metal, rough, { bumpMap: castBump ?? undefined, bumpScale: bump, roughnessMap: roughVar ?? undefined });
 
 export const M = {
-  castAlu: std(0x8e939a, 0.55, 0.55),
-  alu: std(0xadb2b8, 0.7, 0.38),
-  darkAlu: std(0x7b8087, 0.6, 0.5),
-  steel: std(0x9aa1a8, 0.85, 0.3),
-  darkSteel: std(0x3c4046, 0.7, 0.45),
-  blackPaint: std(0x22252a, 0.3, 0.5),
-  plastic: std(0x1c1e22, 0.05, 0.65),
-  plasticGray: std(0x3d4148, 0.05, 0.6),
-  rubber: std(0x121314, 0.0, 0.9),
-  exhaust: std(0x6e6359, 0.6, 0.7),
-  heatShield: std(0xd5d9dc, 0.9, 0.35),
+  castAlu: cast(0x8f949b, 0.6, 0.62),
+  alu: std(0xb3b8be, 0.75, 0.36, { roughnessMap: roughVar ?? undefined }),
+  darkAlu: cast(0x6f747b, 0.6, 0.55),
+  steel: std(0xa3a9b0, 0.88, 0.28),
+  darkSteel: std(0x3a3e44, 0.7, 0.45, { roughnessMap: roughVar ?? undefined }),
+  blackPaint: std(0x1d2024, 0.35, 0.55, { bumpMap: crinkleBump ?? undefined, bumpScale: 0.0006 }),
+  plastic: std(0x18191c, 0.05, 0.62, { bumpMap: fineBump ?? undefined, bumpScale: 0.0004 }),
+  plasticGray: std(0x3a3e45, 0.05, 0.6, { bumpMap: fineBump ?? undefined, bumpScale: 0.0004 }),
+  rubber: std(0x111213, 0.0, 0.88, { bumpMap: fineBump ?? undefined, bumpScale: 0.0005 }),
+  exhaust: cast(0x6a5d52, 0.65, 0.72, 0.002),
+  heatShield: std(0xd0d4d7, 0.92, 0.32, { roughnessMap: roughVar ?? undefined }),
   copper: std(0xb87333, 0.9, 0.35),
   brass: std(0xc9a646, 0.9, 0.35),
   ceramic: std(0xf1f0ea, 0.0, 0.4),
@@ -32,10 +76,10 @@ export const M = {
   green: std(0x3e9a4a, 0.1, 0.5),
   brown: std(0x7a5232, 0.1, 0.5),
   pink: std(0xe96aa0, 0.0, 0.3),
-  body: std(0x4a5058, 0.5, 0.45),
-  bodyInner: std(0x2f3338, 0.4, 0.6),
+  body: std(0x4b525b, 0.35, 0.55),
+  bodyInner: std(0x2c3036, 0.45, 0.6, { roughnessMap: roughVar ?? undefined }),
   radCore: std(0x2c2f34, 0.5, 0.7),
-  battery: std(0x23272d, 0.05, 0.55),
+  battery: std(0x202328, 0.05, 0.5, { bumpMap: fineBump ?? undefined, bumpScale: 0.0003 }),
   filter: std(0xe9dcb8, 0.0, 0.85),
   tankWhite: new THREE.MeshStandardMaterial({ color: 0xe8e6e0, roughness: 0.4, transparent: true, opacity: 0.55 }),
   connector: std(0x50555c, 0.05, 0.6),
@@ -257,4 +301,185 @@ export function labelPlane(text: string, w: number, h: number, bg = '#1c1e22', f
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: t, roughness: 0.7 }));
+}
+
+// ================= Расширенная геометрия (v2.1) =================
+
+/** Тело вращения по профилю [[r, y], ...]; ось — 'x' | 'y' | 'z'. */
+export function lathe(profile: [number, number][], mat: THREE.Material, pos: V3, axis: 'x' | 'y' | 'z' = 'y', seg = 32): THREE.Mesh {
+  const g = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(Math.max(0, r), y)), seg);
+  const m = new THREE.Mesh(g, mat);
+  if (axis === 'x') m.rotation.z = -Math.PI / 2;
+  if (axis === 'z') m.rotation.x = Math.PI / 2;
+  m.position.set(...pos);
+  return m;
+}
+
+/** Профиль поликлинового шкива: n ручьёв по ширине w, радиус r. */
+export function pulleyProfile(r: number, w: number, n = 6, depth = 0.0022, flange = 0.003): [number, number][] {
+  const pts: [number, number][] = [[r * 0.3, -w / 2], [r + flange * 0.6, -w / 2], [r + flange * 0.6, -w / 2 + 0.0015]];
+  const step = (w - 0.003) / n;
+  for (let i = 0; i < n; i++) {
+    const y0 = -w / 2 + 0.0015 + i * step;
+    pts.push([r, y0 + step * 0.15], [r - depth, y0 + step * 0.5], [r, y0 + step * 0.85]);
+  }
+  pts.push([r + flange * 0.6, w / 2 - 0.0015], [r + flange * 0.6, w / 2], [r * 0.3, w / 2]);
+  return pts;
+}
+
+/** Протяжка круглого сечения вдоль кривой с переменным радиусом r(t). */
+export function sweep(points: V3[], radius: (t: number) => number, mat: THREE.Material, seg = 48, radial = 14, closed = false): THREE.Mesh {
+  const curve = new THREE.CatmullRomCurve3(points.map((p) => v(...p)), closed, 'catmullrom', 0.35);
+  const frames = curve.computeFrenetFrames(seg, closed);
+  const pos: number[] = [], nor: number[] = [], uv: number[] = [], idx: number[] = [];
+  const P = new THREE.Vector3(), N = new THREE.Vector3();
+  for (let i = 0; i <= seg; i++) {
+    const t = i / seg;
+    curve.getPointAt(t, P);
+    const r = radius(t);
+    const n = frames.normals[i], b = frames.binormals[i];
+    for (let j = 0; j <= radial; j++) {
+      const a = (j / radial) * Math.PI * 2;
+      N.set(0, 0, 0).addScaledVector(n, Math.cos(a)).addScaledVector(b, Math.sin(a)).normalize();
+      pos.push(P.x + N.x * r, P.y + N.y * r, P.z + N.z * r);
+      nor.push(N.x, N.y, N.z);
+      uv.push(t, j / radial);
+    }
+  }
+  for (let i = 0; i < seg; i++) for (let j = 0; j < radial; j++) {
+    const a = i * (radial + 1) + j, b = a + radial + 1;
+    idx.push(a, b, a + 1, b, b + 1, a + 1);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return new THREE.Mesh(g, mat);
+}
+
+/** Патрубок: протяжка с утолщениями на концах и хомутами. */
+export function hose(points: V3[], r: number, mat: THREE.Material, clamp: THREE.Material | null = null): THREE.Group {
+  const g = new THREE.Group();
+  g.add(sweep(points, (t) => r * (1 + 0.12 * (Math.max(0, 1 - t / 0.08) + Math.max(0, 1 - (1 - t) / 0.08))), mat, 40, 12));
+  if (clamp) {
+    const curve = new THREE.CatmullRomCurve3(points.map((p) => v(...p)), false, 'catmullrom', 0.35);
+    for (const t of [0.04, 0.96]) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 1.14, r * 0.12, 6, 20), clamp);
+      ring.position.copy(curve.getPointAt(t));
+      ring.quaternion.setFromUnitVectors(v(0, 0, 1), curve.getTangentAt(t));
+      g.add(ring);
+    }
+  }
+  return g;
+}
+
+/**
+ * Плоская лента (поликлиновой ремень, цепь) по замкнутой ломаной в плоскости X = const.
+ * Ширина вдоль X, толщина — по нормали наружу. UV.x — вдоль длины (в метрах * k).
+ */
+export function ribbonLoop(points: THREE.Vector3[], width: number, thick: number, mat: THREE.Material): { mesh: THREE.Mesh; length: number } {
+  const n = points.length;
+  const cy = points.reduce((s, p) => s + p.y, 0) / n, cz = points.reduce((s, p) => s + p.z, 0) / n;
+  const pos: number[] = [], nor: number[] = [], uv: number[] = [], idx: number[] = [];
+  let len = 0;
+  const lens: number[] = [0];
+  for (let i = 1; i <= n; i++) { len += points[i % n].distanceTo(points[i - 1]); lens.push(len); }
+  const X = v(1, 0, 0);
+  // 4 кольца вершин: внешняя кромка ±X и внутренняя кромка ±X
+  const rings: THREE.Vector3[][] = [[], [], [], []];
+  const outs: THREE.Vector3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const p = points[i % n];
+    const t = points[(i + 1) % n].clone().sub(points[(i - 1 + n) % n]).normalize();
+    const o = new THREE.Vector3().crossVectors(t, X).normalize();
+    if (o.y * (p.y - cy) + o.z * (p.z - cz) < 0) o.negate();
+    outs.push(o);
+    const outer = p.clone().addScaledVector(o, thick / 2), inner = p.clone().addScaledVector(o, -thick / 2);
+    rings[0].push(outer.clone().addScaledVector(X, -width / 2));
+    rings[1].push(outer.clone().addScaledVector(X, width / 2));
+    rings[2].push(inner.clone().addScaledVector(X, width / 2));
+    rings[3].push(inner.clone().addScaledVector(X, -width / 2));
+  }
+  // грани: 0-1 наружная, 1-2 торец +X, 2-3 внутренняя, 3-0 торец -X
+  const faceNormal = (f: number, i: number) => (f === 0 ? outs[i] : f === 2 ? outs[i].clone().negate() : f === 1 ? X : X.clone().negate());
+  for (let f = 0; f < 4; f++) {
+    const a = rings[f], b = rings[(f + 1) % 4];
+    const base = pos.length / 3;
+    for (let i = 0; i <= n; i++) {
+      const nn = faceNormal(f, i);
+      pos.push(a[i].x, a[i].y, a[i].z, b[i].x, b[i].y, b[i].z);
+      nor.push(nn.x, nn.y, nn.z, nn.x, nn.y, nn.z);
+      uv.push(lens[i], f === 2 ? 0 : 0.5, lens[i], f === 2 ? 1 : 0.6);
+    }
+    for (let i = 0; i < n; i++) {
+      const k = base + i * 2;
+      idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, mat);
+  (m.material as THREE.Material).side = THREE.DoubleSide;
+  return { mesh: m, length: len };
+}
+
+/** Профиль в плоскости (Z, Y), выдавленный вдоль X от x0 до x1. */
+export function extrudeX(profile: [number, number][], x0: number, x1: number, mat: THREE.Material, bevel = 0.004): THREE.Mesh {
+  // Зеркалим Z в профиле, чтобы после поворота не выворачивать нормали: (−z, y, d) → поворот → (d, y, z)
+  const pts = profile.map(([z, y]) => new THREE.Vector2(-z, y));
+  if (THREE.ShapeUtils.isClockWise(pts)) pts.reverse();
+  const shape = new THREE.Shape(pts);
+  const depth = Math.max(0.001, x1 - x0 - 2 * bevel);
+  const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: bevel > 0, bevelSize: bevel, bevelThickness: bevel, bevelSegments: 2, curveSegments: 8 });
+  g.rotateY(Math.PI / 2);
+  const m = new THREE.Mesh(g, mat);
+  m.position.x = x0 + bevel;
+  return m;
+}
+
+/** Гофрированный лист (теплозащитный экран): w × d, волны вдоль X. */
+export function corrugatedSheet(w: number, d: number, waves: number, amp: number, mat: THREE.Material): THREE.Mesh {
+  const g = new THREE.PlaneGeometry(w, d, waves * 8, 4);
+  const p = g.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i);
+    p.setZ(i, Math.sin((x / w + 0.5) * Math.PI * 2 * waves) * amp);
+  }
+  g.computeVertexNormals();
+  g.rotateX(-Math.PI / 2);
+  const m = new THREE.Mesh(g, mat);
+  return m;
+}
+
+/** Текстура поликлинового ремня: продольные рёбра + метки (видно движение). */
+export function beltTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 32;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#141517'; g.fillRect(0, 0, 256, 32);
+  g.fillStyle = '#202226';
+  for (let i = 0; i < 7; i++) g.fillRect(0, 2 + i * 4.3, 256, 1.6);
+  g.fillStyle = '#5b5f66';
+  g.font = 'bold 9px Arial';
+  g.fillText('7PK1516', 20, 22);
+  g.fillRect(150, 10, 3, 12);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** Плавник/лопасть вентилятора. */
+export function bladeShape(len: number, w0: number, w1: number): THREE.ExtrudeGeometry {
+  const s = new THREE.Shape();
+  s.moveTo(0, -w0 / 2);
+  s.quadraticCurveTo(len * 0.5, -w1 * 0.75, len, -w1 / 2);
+  s.quadraticCurveTo(len * 1.05, 0, len, w1 / 2);
+  s.quadraticCurveTo(len * 0.5, w1 * 0.4, 0, w0 / 2);
+  s.lineTo(0, -w0 / 2);
+  return new THREE.ExtrudeGeometry(s, { depth: 0.003, bevelEnabled: true, bevelSize: 0.001, bevelThickness: 0.001, bevelSegments: 1 });
 }

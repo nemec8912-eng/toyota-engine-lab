@@ -57,6 +57,8 @@ export class Viewer {
     this.renderer.localClippingEnabled = true;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.appendChild(this.renderer.domElement);
     this.labelRenderer = new CSS2DRenderer();
     this.labelRenderer.domElement.className = 'label-layer';
@@ -76,9 +78,18 @@ export class Viewer {
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.background = new THREE.Color(0x0c1016);
     this.scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x2a2420, 0.5));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.4);
-    sun.position.set(1.5, 3, 1.5);
-    this.scene.add(sun);
+    const sun = new THREE.DirectionalLight(0xfff6ea, 1.6);
+    sun.position.set(0.9, 2.6, 1.3);
+    sun.castShadow = true;
+    const small = Math.min(window.innerWidth, window.innerHeight) < 700;
+    sun.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048);
+    const sc = sun.shadow.camera as THREE.OrthographicCamera;
+    sc.left = -0.85; sc.right = 0.85; sc.top = 0.85; sc.bottom = -0.85; sc.near = 1; sc.far = 5.5;
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.012;
+    sun.shadow.radius = 3;
+    sun.target.position.set(0, 0.1, 0.05);
+    this.scene.add(sun, sun.target);
     const fill = new THREE.DirectionalLight(0x9bb7ff, 0.4);
     fill.position.set(-2, 1, -1);
     this.scene.add(fill);
@@ -88,6 +99,7 @@ export class Viewer {
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -0.42;
     floor.userData.noPick = true;
+    floor.receiveShadow = true;
     this.scene.add(floor);
     const grid = new THREE.GridHelper(6, 60, 0x2a3240, 0x1c222c);
     grid.position.y = -0.419;
@@ -252,7 +264,7 @@ export class Viewer {
   viewPreset(name: 'front' | 'top' | 'right' | 'left' | 'rear'): void {
     const t = new THREE.Vector3(0, name === 'front' ? 0.14 : 0.18, 0);
     const pos: Record<string, THREE.Vector3> = {
-      front: new THREE.Vector3(0.04, 0.2, 1.0), top: new THREE.Vector3(0.01, 1.9, 0.15), right: new THREE.Vector3(1.6, 0.4, 0.1),
+      front: new THREE.Vector3(0.04, 0.22, 1.05), top: new THREE.Vector3(0.01, 1.9, 0.15), right: new THREE.Vector3(1.6, 0.4, 0.1),
       left: new THREE.Vector3(-1.6, 0.5, 0.2), rear: new THREE.Vector3(0.1, 0.9, -1.5),
     };
     this.camAnim = { from: this.camera.position.clone(), to: pos[name], tFrom: this.controls.target.clone(), tTo: t, t: 0 };
@@ -270,7 +282,8 @@ export class Viewer {
     const hov = this.hovered === id && !sel;
     const clip = this.cut && CUT_IDS.has(id) ? [this.clipPlane] : null;
     p.mats.forEach((m, i) => {
-      const op = p.baseOpacity[i] * fade * xr;
+      const fk = this.wallFade[p.meshes[i].userData.fade as string] ?? 1;
+      const op = p.baseOpacity[i] * fade * xr * fk;
       m.opacity = op;
       const tr = op < 0.999;
       if (m.transparent !== tr) { m.transparent = tr; m.needsUpdate = true; }
@@ -466,6 +479,26 @@ export class Viewer {
     }
   }
 
+  /** Стены отсека и радиатор становятся прозрачными, когда камера за ними. */
+  private wallFade: Record<string, number> = { '+x': 1, '-x': 1, '+z': 1, '-z': 1 };
+  private updateWallFade(dt: number): void {
+    const c = this.camera.position;
+    const t: Record<string, number> = {
+      '+x': c.x > 0.7 ? 0.12 : 1, '-x': c.x < -0.7 ? 0.12 : 1,
+      '-z': c.z < -0.46 ? 0.12 : 1, '+z': c.z > 0.6 && c.y < 0.62 ? 0.06 : 1,
+    };
+    let changed = false;
+    for (const k of Object.keys(t)) {
+      const cur = this.wallFade[k];
+      const nv = cur + (t[k] - cur) * Math.min(1, dt * 6);
+      if (Math.abs(nv - cur) > 0.002 || (cur !== t[k] && Math.abs(nv - t[k]) < 0.01)) {
+        this.wallFade[k] = Math.abs(nv - t[k]) < 0.01 ? t[k] : nv;
+        changed = true;
+      }
+    }
+    if (changed) for (const id of ['bay', 'radiator', 'fan']) this.applyLook(id);
+  }
+
   private frame(): void {
     const real = this.clock.getDelta();
     const dt = Math.min(real, 0.1);
@@ -480,6 +513,7 @@ export class Viewer {
       if (a.t >= 1) this.camAnim = null;
     }
     this.controls.update();
+    this.updateWallFade(dt);
     if (this.probesOn) this.updateProbeMarkers();
     this.renderer.render(this.scene, this.camera);
     this.labelRenderer.render(this.scene, this.camera);

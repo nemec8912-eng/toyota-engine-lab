@@ -98,26 +98,35 @@ export class App {
       return b;
     };
     const speeds: [number, string][] = [[1, '1×'], [0.25, '¼×'], [0.04, '1/25×']];
-    const speedBtn = h('button', { class: 'vbtn', title: 'Скорость анимации механизмов' }, 'Анимация 1×');
+    const speedBtn = h('button', { class: 'vbtn', title: 'Скорость анимации механизмов' }, '⏱ 1×');
     let si = 0;
-    speedBtn.onclick = () => { si = (si + 1) % speeds.length; v.slow = speeds[si][0]; speedBtn.textContent = 'Анимация ' + speeds[si][1]; };
-    const viewSel = h('select', { class: 'vbtn', title: 'Вид' },
-      h('option', { value: '' }, 'Вид…'), h('option', { value: 'reset' }, 'Общий'), h('option', { value: 'front' }, 'Спереди'),
-      h('option', { value: 'top' }, 'Сверху'), h('option', { value: 'right' }, 'Справа (ГРМ)'), h('option', { value: 'left' }, 'Слева (КПП)'), h('option', { value: 'rear' }, 'Сзади (щит)'));
-    viewSel.onchange = () => {
-      const val = viewSel.value;
-      if (val === 'reset') v.resetView();
-      else if (val) v.viewPreset(val as any);
-      viewSel.value = '';
+    speedBtn.onclick = () => { si = (si + 1) % speeds.length; v.slow = speeds[si][0]; speedBtn.textContent = '⏱ ' + speeds[si][1]; };
+    const views: [string, string][] = [['reset', 'Общий'], ['front', 'Спереди'], ['top', 'Сверху'], ['right', 'Справа (ГРМ)'], ['left', 'Слева (КПП)'], ['rear', 'Сзади']];
+    const viewRow = h('div', { class: 'vrow' });
+    for (const [id, name] of views) viewRow.append(h('button', { class: 'vbtn', onclick: () => { if (id === 'reset') v.resetView(); else v.viewPreset(id as any); if (this.isMobile.matches) tb.classList.remove('open'); } }, name));
+
+    const panel = h('div', { class: 'vpanel' },
+      h('div', { class: 'vrow' },
+        toggle('Рентген', 'Полупрозрачные корпуса: видно поршни, коленвал, клапаны, цепь', () => v.xray, (b) => v.setXray(b)),
+        toggle('Разрез', 'Разрез двигателя по цилиндрам (вид спереди)', () => v.cut, (b) => { v.setCut(b); if (b) v.viewPreset('front'); }),
+        toggle('Изолировать', 'Показать только выбранную деталь', () => v.isolate, (b) => v.setIsolate(b)),
+        speedBtn),
+      h('div', { class: 'vlabel' }, 'Вид'), viewRow,
+      h('div', { class: 'vrow' },
+        h('button', { class: 'vbtn', title: 'Установить на место все снятые детали', onclick: () => this.assembleAll() }, '🔧 Собрать всё'),
+        h('button', { class: 'vbtn', onclick: () => startScenario(scn.current?.id ?? null, scn.exam) }, '↺ Сбросить стенд')));
+    const menuBtn = h('button', { class: 'vbtn icon', title: 'Режимы просмотра' }, '☰');
+    menuBtn.onclick = () => { tb.classList.toggle('open'); menuBtn.classList.toggle('on', tb.classList.contains('open')); };
+    const quickX = toggle('◐', 'Рентген', () => v.xray, (b) => v.setXray(b));
+    quickX.classList.add('icon');
+    const focusBtn = h('button', { class: 'vbtn icon', title: 'Во весь экран' }, '⛶');
+    focusBtn.onclick = () => {
+      document.body.classList.toggle('focus');
+      focusBtn.classList.toggle('on', document.body.classList.contains('focus'));
     };
-    tb.append(
-      toggle('Рентген', 'Полупрозрачные корпуса: видно поршни, коленвал, клапаны, цепь', () => v.xray, (b) => v.setXray(b)),
-      toggle('Разрез', 'Разрез двигателя по цилиндрам (вид спереди)', () => v.cut, (b) => { v.setCut(b); if (b) v.viewPreset('front'); }),
-      toggle('Изолировать', 'Показать только выбранную деталь', () => v.isolate, (b) => v.setIsolate(b)),
-      viewSel,
-      speedBtn,
-      h('button', { class: 'vbtn', title: 'Установить на место все снятые детали', onclick: () => this.assembleAll() }, 'Собрать всё'),
-    );
+    tb.append(h('div', { class: 'vrow' }, menuBtn, quickX, focusBtn), panel);
+    // Синхронизация кнопки «Рентген» в меню и быстрой
+    setInterval(() => { tb.querySelectorAll('.vbtn').forEach((b) => { if (b.textContent === 'Рентген' || b.textContent === '◐') b.classList.toggle('on', v.xray); }); }, 400);
   }
 
   // ================= Ключ, педаль =================
@@ -150,6 +159,26 @@ export class App {
     const stats = h('div', { class: 'mini-stats' });
     this.liveEls.stats = stats;
     host.append(key, pedal, stats);
+    // Сворачивание приборки: тап по приборке → мини-строка
+    const dash = host.parentElement!;
+    const strip = h('div', { class: 'mini-strip', title: 'Развернуть приборную панель' });
+    this.liveEls.strip = strip;
+    dash.prepend(strip);
+    const toggleDash = () => { dash.classList.toggle('mini'); try { localStorage.setItem('dashMini', dash.classList.contains('mini') ? '1' : ''); } catch { /* */ } };
+    document.getElementById('cluster')!.addEventListener('click', toggleDash);
+    strip.addEventListener('click', toggleDash);
+    try { if (localStorage.getItem('dashMini')) dash.classList.add('mini'); } catch { /* */ }
+  }
+
+  // ================= Раскрывающиеся блоки =================
+  private accOpen = new Map<string, boolean>([['actions', true], ['leads', true], ['scnlist', true]]);
+  /** Раскрывающийся блок; состояние запоминается по ключу. */
+  private acc(key: string, title: string, body: (Node | string | null | false)[], meta?: string, defaultOpen = false): HTMLElement {
+    const d = h('details', { class: 'acc' }) as HTMLDetailsElement;
+    d.open = this.accOpen.get(key) ?? defaultOpen;
+    d.addEventListener('toggle', () => this.accOpen.set(key, d.open));
+    d.append(h('summary', {}, h('span', {}, title), meta ? h('span', { class: 'acc-meta' }, meta) : null), h('div', { class: 'acc-body' }, ...body));
+    return d;
   }
 
   // ================= Вкладки =================
@@ -182,7 +211,7 @@ export class App {
     const host = document.getElementById('tabHost')!;
     const keep = host.scrollTop;
     host.innerHTML = '';
-    this.liveEls = { stats: this.liveEls.stats };
+    this.liveEls = { stats: this.liveEls.stats, strip: this.liveEls.strip };
     switch (this.tab) {
       case 'tree': this.renderTree(host); break;
       case 'part': this.renderPart(host); break;
@@ -211,13 +240,12 @@ export class App {
   private fillTree(wrap: HTMLElement): void {
     wrap.innerHTML = '';
     if (store.tray.length) {
-      const bench = h('div', { class: 'bench' }, h('h4', {}, `Снято (на верстаке): ${store.tray.length}`));
-      for (const u of store.tray) {
-        bench.append(h('div', { class: 'bench-item' },
-          h('span', { title: this.unitLabel(u) }, this.unitLabel(u)),
-          h('button', { class: 'link', onclick: () => bus.emit('select', u.home) }, 'место')));
-      }
-      wrap.append(bench);
+      const items = store.tray.map((u) => h('div', { class: 'bench-item' },
+        h('span', { title: this.unitLabel(u) }, this.unitLabel(u)),
+        h('button', { class: 'link', onclick: () => bus.emit('select', u.home) }, 'место')));
+      const b = this.acc('bench', 'Снято, на верстаке', items, String(store.tray.length));
+      b.classList.add('bench');
+      wrap.append(b);
     }
     for (const g of groups) {
       const items = parts.filter((p) => p.group === g.id);
@@ -252,69 +280,69 @@ export class App {
     const p = partById.get(id)!;
     const removable = isRemovable(id);
     const installed = store.installed(id);
-    const pad = h('div', { class: 'pad' });
+    const pad = h('div', { class: 'pad compact' });
     host.append(pad);
     const g = groups.find((x) => x.id === p.group);
-    const status = !removable ? h('span', { class: 'chip' }, 'не снимается на стенде')
+    const status = !removable ? h('span', { class: 'chip' }, 'не снимается')
       : installed ? (p.connector && store.connected.get(id) === false ? h('span', { class: 'chip warn' }, 'разъём отключён') : h('span', { class: 'chip ok' }, 'установлена'))
         : h('span', { class: 'chip off' }, 'снята');
-    pad.append(h('div', { class: 'card' },
-      h('div', { class: 'muted small' }, g?.name ?? ''),
-      h('h3', {}, p.name),
-      h('div', { class: 'row', style: 'margin:6px 0 4px' }, status, h('button', { class: 'link', onclick: () => bus.emit('focus', id) }, 'показать')),
-      p.desc ? h('p', { style: 'margin:8px 0 0' }, p.desc) : null,
-    ));
 
+    // Шапка: название, статус, действия — всегда на виду
+    const head = h('div', { class: 'card part-head' },
+      h('div', { class: 'ph-top' },
+        h('div', { class: 'ph-title' }, h('div', { class: 'muted small' }, g?.name ?? ''), h('h3', {}, p.name)),
+        h('button', { class: 'icon-btn', title: 'Показать в 3D', onclick: () => bus.emit('focus', id) }, '◎')),
+      h('div', { class: 'row', style: 'margin-top:6px' }, status));
     if (removable) {
-      const actions = h('div', { class: 'card' }, h('h4', {}, 'Действия'));
       const reasons = installed ? store.canRemove(id) : store.canInstall(id);
-      const row = h('div', { class: 'row' });
+      const row = h('div', { class: 'row', style: 'margin-top:10px' });
       if (installed) {
         row.append(h('button', { class: 'btn primary', disabled: reasons.length > 0, onclick: () => store.remove(id) }, 'Снять'));
-        row.append(h('button', { class: 'btn amber', disabled: reasons.length > 0, onclick: () => this.replaceWithNew(id) }, 'Заменить на новую'));
+        row.append(h('button', { class: 'btn amber', disabled: reasons.length > 0, onclick: () => this.replaceWithNew(id) }, 'Заменить'));
         if (p.connector) {
           const on = store.connected.get(id) !== false;
-          row.append(h('button', { class: 'btn', onclick: () => store.setConnected(id, !on) }, on ? 'Отключить разъём' : 'Подключить разъём'));
+          row.append(h('button', { class: 'btn', onclick: () => store.setConnected(id, !on) }, on ? 'Отключить разъём' : 'Подключить'));
         }
       } else {
         row.append(h('button', { class: 'btn primary', disabled: reasons.length > 0, onclick: () => this.installDialog(id) }, 'Установить…'));
       }
-      actions.append(row);
+      head.append(row);
       if (reasons.length) {
-        actions.append(h('div', { class: 'warnbox' }, reasons.join(' ')));
         const blockers = installed ? store.blockersInstalled(id) : [...store.blockersInstalled(id), ...store.supportsMissing(id)];
-        if (blockers.length) {
+        const box = h('div', { class: 'warnbox' }, reasons.join(' '));
+        if (blockers.length || (installed && p.powerOff && store.installed('battery_neg'))) {
           const ll = h('div', { class: 'linklist' });
           blockers.forEach((b) => ll.append(h('button', { class: 'link', onclick: () => { bus.emit('select', b); bus.emit('focus', b); } }, partById.get(b)!.name)));
-          actions.append(h('div', { class: 'small muted' }, 'Перейти:'), ll);
+          if (installed && p.powerOff && store.installed('battery_neg')) ll.append(h('button', { class: 'link', onclick: () => bus.emit('select', 'battery_neg') }, 'Минусовая клемма АКБ'));
+          box.append(ll);
         }
-        if (installed && p.powerOff && store.installed('battery_neg')) {
-          actions.append(h('button', { class: 'link', onclick: () => bus.emit('select', 'battery_neg') }, 'Минусовая клемма АКБ'));
-        }
+        head.append(box);
       }
-      pad.append(actions);
     }
+    pad.append(head);
 
+    if (p.desc) pad.append(this.acc('desc', 'Описание', [h('p', { style: 'margin:0' }, p.desc)], undefined, true));
     if (p.fasteners?.length) {
       const t = h('table', { class: 'fast' }, h('tr', {}, h('th', {}, 'Крепёж'), h('th', {}, 'Кол.'), h('th', {}, 'Инструмент'), h('th', {}, 'Момент')));
       for (const f of p.fasteners) {
         t.append(h('tr', {}, h('td', {}, `${f.type} ${f.size !== '—' ? f.size : ''}`), h('td', {}, String(f.n)), h('td', {}, f.socket), h('td', {}, f.torque ? `${f.torque} Н·м` : '—')));
       }
-      pad.append(h('div', { class: 'card' }, h('h4', {}, 'Крепёж и моменты затяжки'), t));
+      const total = p.fasteners.reduce((a, f) => a + f.n, 0);
+      pad.append(this.acc('fast', 'Крепёж и моменты', [t], `${total} шт`));
     }
     if (p.specs?.length) {
       const t = h('table', { class: 'kv' });
       for (const [k, val] of p.specs) t.append(h('tr', {}, h('td', {}, k), h('td', {}, val)));
-      pad.append(h('div', { class: 'card' }, h('h4', {}, 'Характеристики и нормы'), t));
+      pad.append(this.acc('specs', 'Характеристики и нормы', [t], String(p.specs.length)));
     }
-    if (p.notes) pad.append(h('div', { class: 'card' }, h('h4', {}, 'Советы мастеру'), h('div', {}, p.notes)));
+    if (p.notes) pad.append(this.acc('notes', 'Советы мастеру', [h('div', {}, p.notes)]));
     const points = probePoints.filter((pp) => pp.id.split(':')[0] === id);
     if (points.length) {
       const ll = h('div', { class: 'linklist' });
       points.forEach((pp) => ll.append(h('button', { class: 'link', title: pp.hint ?? '', onclick: () => { this.viewer.leads[this.viewer.activeLead] = pp.id; bus.emit('probes', undefined); this.setTab('tester'); } }, pp.id.split(':')[1])));
-      pad.append(h('div', { class: 'card' }, h('h4', {}, 'Точки замера'), h('div', { class: 'small muted' }, `Нажмите вывод, чтобы поставить на него ${this.viewer.activeLead === 'red' ? 'красный' : 'чёрный'} щуп.`), ll));
+      pad.append(this.acc('points', 'Точки замера', [h('div', { class: 'small muted' }, `Нажмите вывод — на него встанет ${this.viewer.activeLead === 'red' ? 'красный' : 'чёрный'} щуп.`), ll], String(points.length)));
     }
-    pad.append(h('div', { class: 'verify' }, '⚠ Моменты, нормы и распиновка — ориентировочные справочные данные. Перед реальным ремонтом сверяйте с заводским руководством (RM/EWD) для вашего VIN.'));
+    pad.append(h('div', { class: 'verify' }, '⚠ Нормы и моменты ориентировочные — сверяйте с RM/EWD по VIN.'));
   }
 
   private replaceWithNew(id: string): void {
@@ -363,7 +391,7 @@ export class App {
 
   private renderTester(host: HTMLElement): void {
     const v = this.viewer;
-    const pad = h('div', { class: 'pad' });
+    const pad = h('div', { class: 'pad compact' });
     host.append(pad);
     const sw = h('div', { class: 'tool-switch' },
       h('button', { class: this.tool === 'meter' ? 'on' : '', onclick: () => { this.tool = 'meter'; this.renderTab(); } }, 'Мультиметр'),
@@ -378,37 +406,35 @@ export class App {
       const modes = h('div', { class: 'modes' });
       const ml: [MeterMode, string][] = [['vdc', 'V⎓'], ['vac', 'V~'], ['ohm', 'Ω'], ['cont', '•))']];
       for (const [m, l] of ml) modes.append(h('button', { class: this.meterMode === m ? 'on' : '', onclick: () => { this.meterMode = m; this.renderTab(); } }, l));
-      pad.append(h('div', { class: 'meter' }, h('div', { class: 'meter-top' }, h('span', {}, 'DIGITAL MULTIMETER'), h('span', {}, 'AUTO')), h('div', { class: 'lcd' }, beep, val, unit), modes));
+      pad.append(h('div', { class: 'meter' }, h('div', { class: 'lcd' }, beep, val, unit), modes));
     } else {
       const bulb = h('div', { class: 'bulb' });
       this.liveEls.bulb = bulb;
-      pad.append(h('div', { class: 'lamp-tester' }, bulb, h('div', { class: 'small' }, h('b', {}, 'Контрольная лампа 12 В / 5 Вт'), h('div', { class: 'muted' }, 'Горит ярко — есть питание, способное дать ток. Тускло — питание через сопротивление. Удобна для проверки предохранителей, питания и масс.'))));
+      pad.append(h('div', { class: 'lamp-tester' }, bulb, h('div', { class: 'small' }, h('b', {}, 'Контрольная лампа 12 В / 5 Вт'), h('div', { class: 'muted' }, 'Ярко — есть питание с током. Тускло — через сопротивление.'))));
     }
     const warn = h('div', { class: 'warnbox', style: 'display:none' });
     this.liveEls.meterWarn = warn;
     pad.append(warn);
 
-    // Щупы
+    // Щупы — компактно: цветной переключатель + выпадающий список
     const leads = h('div', { class: 'leads' });
     for (const lead of ['red', 'black'] as const) {
       const sel = h('select') as HTMLSelectElement;
       this.leadSelects[lead] = sel;
       sel.onchange = () => { v.leads[lead] = sel.value || null; bus.emit('probes', undefined); };
-      const swc = h('div', { class: `sw ${lead} ${v.activeLead === lead ? 'active' : ''}`, title: 'Выбрать этот щуп для установки касанием в 3D', onclick: () => { v.activeLead = lead; this.renderTab(); } });
+      const swc = h('div', { class: `sw ${lead} ${v.activeLead === lead ? 'active' : ''}`, title: 'Этот щуп ставится касанием в 3D', onclick: () => { v.activeLead = lead; this.renderTab(); } });
       leads.append(h('div', { class: 'lead' }, swc, sel));
     }
-    pad.append(h('div', { class: 'card', style: 'margin-top:12px' }, h('h4', {}, 'Щупы'), h('div', { class: 'small muted' }, `Активный щуп: ${v.activeLead === 'red' ? 'красный' : 'чёрный'}. Нажмите на жёлтую точку в 3D, чтобы поставить его туда, или выберите точку из списка.`), leads));
+    pad.append(this.acc('leads', 'Щупы', [h('div', { class: 'small muted', style: 'margin-bottom:6px' }, `Касание жёлтой точки в 3D ставит ${v.activeLead === 'red' ? 'красный' : 'чёрный'} щуп. Кружок слева — выбрать щуп.`), leads], v.activeLead === 'red' ? 'активен красный' : 'активен чёрный', true));
     this.syncLeadSelects();
-
-    const pointHint = h('div', { class: 'small muted' });
+    const pointHint = h('div', { class: 'small muted', style: 'margin:6px 2px' });
     this.liveEls.pointHint = pointHint;
     pad.append(pointHint);
-    pad.append(h('div', { class: 'card', style: 'margin-top:12px' }, h('h4', {}, 'Как мерить'),
-      h('div', { class: 'small' },
-        h('p', { style: 'margin:0 0 6px' }, '• Напряжение: чёрный щуп на массу, красный — на проверяемый вывод. Включите зажигание, если цепь питается от замка.'),
-        h('p', { style: 'margin:0 0 6px' }, '• Сопротивление: выключите зажигание и отключите разъём детали (кнопка в карточке детали), меряйте между выводами самой детали.'),
-        h('p', { style: 'margin:0 0 6px' }, '• Падение напряжения: щупы на два конца одного провода/контакта под нагрузкой (например, штырь АКБ и клемма при прокрутке).'),
-        h('p', { style: 'margin:0' }, '• Точки замера видны в 3D, пока открыта эта вкладка. Серые — массы.'))));
+    pad.append(this.acc('howto', 'Как мерить', [h('div', { class: 'small' },
+      h('p', { style: 'margin:0 0 6px' }, '• Напряжение: чёрный на массу, красный на вывод. Для цепей от замка включите зажигание.'),
+      h('p', { style: 'margin:0 0 6px' }, '• Сопротивление: зажигание выключено, разъём детали отключён, меряйте между выводами детали.'),
+      h('p', { style: 'margin:0 0 6px' }, '• Падение напряжения: щупы на два конца контакта под нагрузкой (штырь АКБ и клемма при прокрутке).'),
+      h('p', { style: 'margin:0' }, '• Точки видны в 3D, пока открыта эта вкладка. Серые — массы.'))]));
   }
 
   private syncLeadSelects(): void {
@@ -497,43 +523,38 @@ export class App {
 
   // ================= Сценарии =================
   private renderScenarios(host: HTMLElement): void {
-    const pad = h('div', { class: 'pad' });
+    const pad = h('div', { class: 'pad compact' });
     host.append(pad);
     const s = scn.current;
-    if (s || scn.exam) {
+    if (s) {
       const card = h('div', { class: 'card' });
-      card.append(h('h4', {}, scn.exam ? 'Экзамен' : 'Текущий сценарий'));
-      card.append(h('h3', {}, scn.exam && !scn.solved && !scn.gaveUp ? 'Скрытая неисправность' : s!.title));
-      card.append(h('p', { style: 'margin:6px 0' }, h('b', {}, 'Жалоба клиента: '), s!.complaint));
+      const hidden = scn.exam && !scn.solved && !scn.gaveUp;
+      card.append(h('div', { class: 'muted small' }, scn.exam ? 'Экзамен' : 'Текущий сценарий'), h('h3', {}, hidden ? 'Скрытая неисправность' : s.title));
+      card.append(h('p', { style: 'margin:6px 0 0', class: 'small' }, h('b', {}, 'Жалоба: '), s.complaint));
       if (scn.solved && scn.result) {
         const r = scn.result;
         const mm = Math.floor(r.seconds / 60), ss = Math.round(r.seconds % 60);
-        card.append(h('div', { class: 'okbox' }, h('b', {}, 'Неисправность устранена! '), s!.cause,
+        card.append(h('div', { class: 'okbox' }, h('b', {}, 'Устранено! '), s.cause,
           h('div', { style: 'margin-top:6px' }, `Время: ${mm} мин ${ss} с · Новых деталей: ${r.replaced}`),
-          r.extra.length ? h('div', {}, `Заменено лишнее: ${r.extra.join(', ')}`) : h('div', {}, 'Лишних замен нет — отличная диагностика.')));
+          r.extra.length ? h('div', {}, `Лишние замены: ${r.extra.join(', ')}`) : h('div', {}, 'Лишних замен нет.')));
       } else if (scn.gaveUp) {
-        card.append(h('div', { class: 'warnbox' }, h('b', {}, 'Ответ: '), s!.cause, h('div', {}, 'Ремонт: ' + s!.repair)));
+        card.append(h('div', { class: 'warnbox' }, h('b', {}, 'Ответ: '), s.cause, h('div', {}, 'Ремонт: ' + s.repair)));
       }
-      if (!scn.exam && !scn.solved) {
-        s!.hints.slice(0, scn.hintsShown).forEach((t, i) => card.append(h('div', { class: 'hint' }, h('span', { class: 'n' }, String(i + 1)), t)));
-        const row = h('div', { class: 'row', style: 'margin-top:10px' });
-        if (scn.hintsShown < s!.hints.length) row.append(h('button', { class: 'btn', onclick: () => nextHint() }, scn.hintsShown ? 'Следующая подсказка' : 'Подсказка'));
-        if (!scn.gaveUp) row.append(h('button', { class: 'btn danger', onclick: () => giveUp() }, 'Показать ответ'));
-        card.append(row);
-      } else if (scn.exam && !scn.solved && !scn.gaveUp) {
-        card.append(h('div', { class: 'row', style: 'margin-top:10px' }, h('button', { class: 'btn danger', onclick: () => giveUp() }, 'Сдаться и показать ответ')));
-      }
-      card.append(h('div', { class: 'row', style: 'margin-top:10px' }, h('button', { class: 'btn', onclick: () => startScenario(null) }, 'Сбросить стенд (исправный)')));
+      const row = h('div', { class: 'row', style: 'margin-top:10px' });
+      if (!scn.exam && !scn.solved && scn.hintsShown < s.hints.length) row.append(h('button', { class: 'btn sm', onclick: () => { this.accOpen.set('hints', true); nextHint(); } }, `Подсказка ${scn.hintsShown + 1}/${s.hints.length}`));
+      if (!scn.solved && !scn.gaveUp) row.append(h('button', { class: 'btn sm danger', onclick: () => giveUp() }, scn.exam ? 'Сдаться' : 'Ответ'));
+      row.append(h('button', { class: 'btn sm', onclick: () => startScenario(null) }, 'Сбросить'));
+      card.append(row);
       pad.append(card);
+      if (!scn.exam && scn.hintsShown) {
+        pad.append(this.acc('hints', 'Подсказки', s.hints.slice(0, scn.hintsShown).map((t, i) => h('div', { class: 'hint' }, h('span', { class: 'n' }, String(i + 1)), t)), `${scn.hintsShown}/${s.hints.length}`, true));
+      }
     } else {
-      pad.append(h('div', { class: 'card' }, h('h4', {}, 'Свободный режим'), h('div', { class: 'small' }, 'Все детали исправны. Разбирайте, меряйте, изучайте. Выберите сценарий ниже, чтобы потренироваться в поиске неисправности.')));
+      pad.append(h('div', { class: 'card small' }, h('b', {}, 'Свободный режим. '), 'Все детали исправны — разбирайте, меряйте, изучайте.'));
     }
-    pad.append(h('button', { class: 'btn amber', style: 'width:100%;margin-bottom:12px', onclick: () => startScenario('random', true) }, '🎲 Экзамен: случайная скрытая неисправность'));
-    pad.append(h('div', { class: 'muted small', style: 'margin:0 0 8px' }, 'Обучающие сценарии (с подсказками):'));
-    scenarios.forEach((sc, i) => {
-      pad.append(h('div', { class: 'scn', onclick: () => { startScenario(sc.id); } }, h('div', { class: 'num' }, String(i + 1)), h('div', {}, h('b', {}, sc.title), h('span', {}, sc.complaint))));
-    });
-    pad.append(h('p', { class: 'small muted' }, 'Неисправность считается устранённой, когда дефектная деталь заменена исправной. Перестановка одинаковых деталей (катушки, реле) — честный способ проверки.'));
+    pad.append(h('button', { class: 'btn amber', style: 'width:100%;margin-bottom:10px', onclick: () => startScenario('random', true) }, '🎲 Экзамен: случайная неисправность'));
+    const list = scenarios.map((sc, i) => h('div', { class: `scn ${s?.id === sc.id ? 'cur' : ''}`, onclick: () => { this.accOpen.set('scnlist', false); startScenario(sc.id); } }, h('div', { class: 'num' }, String(i + 1)), h('div', {}, h('b', {}, sc.title), h('span', {}, sc.complaint))));
+    pad.append(this.acc('scnlist', 'Обучающие сценарии', list, String(scenarios.length), !s));
   }
 
   private updateTaskChip(): void {
@@ -575,6 +596,18 @@ export class App {
         h('span', {}, 'Обороты ', h('b', {}, String(Math.round(sim.rpmVisual)))),
         h('span', {}, sim.running ? h('b', { style: 'color:#8ff0bd' }, 'работает') : sim.cranking ? h('b', { style: 'color:#ffd39a' }, 'прокрутка') : 'заглушен'),
       );
+    }
+    const strip = this.liveEls.strip;
+    if (strip && strip.offsetParent) {
+      const L = sim.lamps;
+      const lamps = [L.mil && 'CHECK', L.batt && 'АКБ', L.oil && 'МАСЛО', L.hot && 'ПЕРЕГРЕВ'].filter(Boolean).join(' · ');
+      strip.innerHTML = '';
+      strip.append(
+        h('span', { class: 'ms-rpm' }, String(Math.round(sim.rpmOut)), h('small', {}, ' об/мин')),
+        h('span', {}, Math.round(sim.ectRead) + ' °C'),
+        h('span', {}, sim.net.vPost.toFixed(1) + ' В'),
+        lamps ? h('span', { class: 'ms-lamps' }, lamps) : h('span', { class: 'muted' }, sim.net.igOn ? 'лампы не горят' : 'зажигание выкл.'),
+        h('span', { class: 'ms-open' }, '▴'));
     }
     if (this.tab === 'tester') this.tickTester();
     if (this.tab === 'scanner') {

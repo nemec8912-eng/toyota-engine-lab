@@ -233,3 +233,67 @@ table.live td:last-child { text-align: right; font-family: "Courier New", monosp
   .side.right { height: auto; border-top: 0; border-left: 1px solid var(--line); }
   .cluster { max-height: 84px; }
 }
+
+/* ======== Компактный интерфейс (v2.1) ======== */
+.acc { background: var(--panel2); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 8px; overflow: hidden; }
+.acc > summary { list-style: none; display: flex; align-items: center; gap: 8px; padding: 10px 12px; cursor: pointer; font-weight: 600; font-size: 13px; user-select: none; -webkit-user-select: none; }
+.acc > summary::-webkit-details-marker { display: none; }
+.acc > summary::before { content: '▸'; color: var(--muted); font-size: 11px; transition: transform .18s; display: inline-block; width: 10px; }
+.acc[open] > summary::before { transform: rotate(90deg); }
+.acc > summary .acc-meta { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 11.5px; background: #1d2836; border-radius: 999px; padding: 1px 8px; }
+.acc-body { padding: 0 12px 12px; }
+.acc.bench { border-radius: 0; border-width: 0 0 1px; margin: 0; background: #10161f; }
+.pad.compact { padding: 10px; }
+.pad.compact .card { padding: 10px 12px; margin-bottom: 8px; }
+.part-head h3 { font-size: 15.5px; margin: 0; }
+.ph-top { display: flex; align-items: flex-start; gap: 8px; }
+.ph-title { flex: 1; min-width: 0; }
+.icon-btn { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: #1d2836; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+.scn.cur { border-color: var(--amber); }
+.meter { padding: 10px; border-radius: 14px; }
+.lcd { min-height: 54px; padding: 8px 12px; }
+.lcd .val { font-size: 34px; }
+.modes { margin-top: 8px; }
+.modes button { padding: 7px 0; }
+
+/* Панель режимов 3D: одна кнопка, по нажатию раскрывается */
+.vtoolbar { flex-direction: column; align-items: flex-start; gap: 6px; right: auto; max-width: calc(100% - 20px); }
+.vrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.vbtn.icon { width: 38px; height: 34px; padding: 0; font-size: 16px; display: grid; place-items: center; }
+.vpanel { display: none; flex-direction: column; gap: 6px; background: rgba(13, 18, 26, .92); border: 1px solid var(--line); border-radius: 12px; padding: 8px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); max-width: 100%; }
+.vtoolbar.open .vpanel { display: flex; }
+.vlabel { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+
+/* Мини-строка вместо приборки */
+.mini-strip { display: none; align-items: center; gap: 12px; padding: 6px 10px; background: #0e131a; border: 1px solid var(--line); border-radius: 10px; font-size: 12.5px; cursor: pointer; font-variant-numeric: tabular-nums; grid-column: 1 / -1; }
+.mini-strip .ms-rpm { color: var(--amber); font-weight: 700; font-size: 15px; }
+.mini-strip .ms-rpm small { font-size: 11px; font-weight: 500; color: var(--muted); }
+.mini-strip .ms-lamps { color: #ff9a6a; font-weight: 600; }
+.mini-strip .ms-open { margin-left: auto; color: var(--muted); }
+.dash.mini .cluster { display: none; }
+.dash.mini .mini-strip { display: flex; }
+.cluster { cursor: pointer; }
+
+/* Режим «во весь экран»: только 3D, приборка в мини-строке */
+body.focus .side, body.focus .controls { display: none !important; }
+body.focus #app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "center"; }
+body.focus .dash { padding: 4px 8px; }
+body.focus .dash .cluster { display: none; }
+body.focus .dash .mini-strip { display: flex; }
+
+@media (min-width: 981px) {
+  body.focus #app { grid-template-rows: auto minmax(0, 1fr); }
+  .dash.mini { grid-template-columns: minmax(0, 1fr) 300px; }
+}
+@media (max-width: 980px) {
+  .controls { flex-wrap: nowrap; }
+  .controls .key { flex: 0 0 auto; width: 56%; }
+  .key button { padding: 7px 0; font-size: 11.5px; }
+  .controls .pedal { flex: 1 1 auto; gap: 6px; }
+  .pedal output { min-width: 30px; }
+  body.focus #app { grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: "top" "center" "dash"; }
+  .side.right { height: 38dvh; }
+  .vtoolbar { max-width: calc(100% - 16px); overflow: visible; }
+  .vpanel .vrow { flex-wrap: wrap; }
+  .vtoolbar .vrow { overflow: visible; }
+}

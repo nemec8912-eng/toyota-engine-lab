@@ -189,7 +189,8 @@ export class Sim {
       let v = this.soc - igLoad * 0.15;
       if (this.chargeOk) v = 14.1;
       // Попытка прокрутки (ST) нагружает АКБ, даже если стартер не провернул
-      const stDraw = this.ign === 'start' && !this.running && this.netPrev.st50 > 8 ? 1 : 0;
+      // Втягивающее реле стартера нагружает АКБ всё время, пока ключ в START
+      const stDraw = this.ign === 'start' && !this.running && n.negOk && this.fuseOk('fuse_am2') && this.relayOk('relay_st') && store.live('starter') ? 1 : 0;
       if (stDraw) v = this.soc - (this.cranking ? 2.3 : 1.2);
       n.vPost = Math.max(0, v);
       if (store.installed('battery_pos')) {
@@ -263,8 +264,9 @@ export class Sim {
 
     // ---------- Стартер ----------
     const wantCrank = this.ign === 'start' && !this.running;
-    let canCrank = wantCrank && n.st50 > 8 && store.live('starter');
-    if (canCrank && n.v30 < 8.5) {
+    const solenoid = wantCrank && n.stRelayOn && store.live('starter');
+    let canCrank = solenoid && n.st50 > 6;
+    if (solenoid && n.v30 < 8.5) {
       canCrank = false;
       this.warnOnce('click', 'Щелчок тягового реле стартера, стартер не крутит. Приборная панель тускнеет.');
     }
@@ -273,7 +275,7 @@ export class Sim {
       canCrank = false;
       this.warnOnce('lowbatt', 'АКБ разряжен — стартер не проворачивает двигатель.');
     }
-    if (wantCrank && n.st50 <= 8 && n.igOn) this.warnOnce('nost', 'Стартер молчит — нет напряжения на клемме 50.');
+    if (wantCrank && !solenoid && n.igOn) this.warnOnce('nost', 'Стартер молчит — нет напряжения на клемме 50.');
     if (!wantCrank) { this.warned.delete('click'); this.warned.delete('nost'); this.warned.delete('lowbatt'); this.warned.delete('crank'); }
     if (canCrank && !this.cranking) this.warnOnce('crank', 'Стартер крутит двигатель…');
     this.cranking = canCrank;
